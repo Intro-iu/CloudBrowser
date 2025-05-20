@@ -1,24 +1,20 @@
-<center>
+<div align="center">
 <h1>CloudBrowser</h1>
 
 A Wonderful WebDAV client application
 
 ![Flutter](https://img.shields.io/badge/flutter-%2302569B.svg?style=flat&logo=flutter&logoColor=white) ![Dart](https://img.shields.io/badge/dart-%230175C2.svg?style=flat&logo=dart&logoColor=white) ![License](https://img.shields.io/badge/License-GPLv3-blue)
 
-**English** | [**中文简体**](./docs/cn/README.md) 
+**English** | [**中文简体**](/docs/cn/README.md) 
 
-</center>
+</div>
 
 
 ---
 
 ## Preview
 <center>
-<figure>
-<img src=docs/images/Home_light.jpg width=256/>
-&ensp;
-<img src=docs/images/Home_dark.jpg width=256/>
-</figure>
+<img src=/docs/images/Home_light.jpg width=256/>&ensp;&ensp;<img src=/docs/images/Home_dark.jpg width=256/>
 </center>
 
 ## Project Status

@@ -1,4 +1,4 @@
-<center>
+<div align="center">
 <h1>CloudBrowser</h1>
 
 一个功能强大的 WebDAV 客户端
@@ -7,17 +7,13 @@
 
 [**English**](/README.md) | **中文简体**
 
-</center>
+</div>
 
 ---
 
 ## 预览
 <center>
-<figure>
-<img src=/docs/images/Home_light.jpg width=256/>
-&ensp;
-<img src=/docs/images/Home_dark.jpg width=256/>
-</figure>
+<img src=/docs/images/Home_light.jpg width=256/>&ensp;&ensp;<img src=/docs/images/Home_dark.jpg width=256/>
 </center>
 
 ## 项目状态
