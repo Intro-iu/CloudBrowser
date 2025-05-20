@@ -9,13 +9,12 @@ A Wonderful WebDAV client application
 
 </div>
 
-
 ---
 
 ## Preview
-<center>
+<div align="center">
 <img src=/docs/images/Home_light.jpg width=256/>&ensp;&ensp;<img src=/docs/images/Home_dark.jpg width=256/>
-</center>
+</div>
 
 ## Project Status
 - [x] Configuration File Management (Add/Edit/Delete)

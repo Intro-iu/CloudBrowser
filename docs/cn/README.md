@@ -12,9 +12,9 @@
 ---
 
 ## 预览
-<center>
+<div align="center">
 <img src=/docs/images/Home_light.jpg width=256/>&ensp;&ensp;<img src=/docs/images/Home_dark.jpg width=256/>
-</center>
+</div>
 
 ## 项目状态
 - [x] 配置文件管理（添加、编辑、删除）
