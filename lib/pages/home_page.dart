@@ -24,11 +24,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final ScrollController _breadcrumbScrollController = ScrollController();
   final GlobalKey _currentBreadcrumbKey = GlobalKey();
 
-  final SliverOverlapAbsorberHandle _overlapHandle =
-      SliverOverlapAbsorberHandle();
-  final GlobalKey _sliverAppBarKey =
-      GlobalKey(); // 用于获取 SliverAppBar 的 RenderObject
-
   bool _isLoading = true;
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -443,24 +438,31 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
-  @override
   // 主页载体
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: NestedScrollView(
-        headerSliverBuilder: _sliverBuilder,
-        body: PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (didPop, result) {
-            _goToParentDirectory();
-            return;
-          },
-          child: _buildBodyContent(),
+      body: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          _goToParentDirectory();
+          return;
+        },
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [_buildAppBar(), _buildNavigationBar(), _buildBodyContent()],
         ),
       ),
       drawer: Drawer(
+        // 去除圆角
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(0),
+            bottomRight: Radius.circular(0),
+          ),
+        ),
         backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
         child: ListView(
           padding: EdgeInsets.zero,
@@ -571,123 +573,118 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   // 构建工具栏
-  List<Widget> _sliverBuilder(BuildContext context, bool innerBoxIsScrolled) {
-    return <Widget>[
-      SliverOverlapAbsorber(
-        handle: _overlapHandle,
-        sliver: Container(
-          key: _sliverAppBarKey, // 绑定 key
-          child: SliverAppBar(
-            floating: true,
-            pinned: false,
-            snap: false,
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            title: Text(
-              'CloudBrowser',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            leading: IconButton(
-              icon: Icon(
-                Icons.menu,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _loadFiles,
-                tooltip: '刷新',
-              ),
-            ],
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(50),
-              child: SizedBox(
-                height: 50,
-                child: Align(
-                  alignment: Alignment.centerLeft, // 左对齐
-                  child: ListView(
-                    controller: _breadcrumbScrollController,
-                    primary: false, // 关键：禁用主滚动属性
-                    physics: const ClampingScrollPhysics(), // 防止滚动传递
-                    scrollDirection: Axis.horizontal,
-                    children: _buildBreadcrumbs(), // 动态生成面包屑导航
-                  ),
-                ),
-              ),
-            ),
-          ),
+  Widget _buildAppBar() {
+    return SliverAppBar(
+      floating: true,
+      pinned: false,
+      snap: false,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      title: Text(
+        'CloudBrowser',
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontWeight: FontWeight.w400,
         ),
       ),
-    ];
-  }
-
-  // 主体内容构建方法
-  Widget _buildBodyContent() {
-    if (_errorMessage != null) {
-      return _buildErrorPage();
-    }
-
-    // 新增配置空状态提示
-    if (_configs.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_circle_outline, size: 48),
-            SizedBox(height: 16),
-            Text('暂无配置，请先创建WebDAV配置'),
-            TextButton(
-              onPressed: () => _showConfigDialog(),
-              child: Text('创建新配置'),
-            ),
-          ],
+      leading: IconButton(
+        icon: Icon(
+          Icons.menu,
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
         ),
-      );
-    }
-
-    if (_currentConfig == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.cloud_queue, size: 48),
-            SizedBox(height: 16),
-            Text('请从侧边栏选择WebDAV配置'),
-            TextButton(
-              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-              child: Text('打开配置列表'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator.adaptive());
-    }
-
-    if (_files.isEmpty) {
-      return const Center(child: Text('此目录为空'));
-    }
-
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(padding: EdgeInsets.only(top: kToolbarHeight + 31)),
-        SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) {
-            final file = _files[index];
-            return _buildFileItem(file, index);
-          }, childCount: _files.length),
+        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _loadFiles,
+          tooltip: '刷新',
         ),
       ],
     );
   }
 
-    // 列表项构建方法
+  Widget _buildNavigationBar() {
+    return SliverPersistentHeader(
+      pinned: true, // 滚动时固定
+      delegate: _BreadcrumbHeaderDelegate(
+        child: Container(
+          color: Theme.of(context).colorScheme.surface,
+          height: 50,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: ListView(
+              controller: _breadcrumbScrollController,
+              primary: false,
+              physics: const ClampingScrollPhysics(),
+              scrollDirection: Axis.horizontal,
+              children: _buildBreadcrumbs(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 主体内容构建方法
+  Widget _buildBodyContent() {
+    if (_errorMessage != null) {
+      return SliverFillRemaining(child: _buildErrorPage());
+    }
+
+    if (_configs.isEmpty) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_circle_outline, size: 48),
+              SizedBox(height: 16),
+              Text('暂无配置，请先创建WebDAV配置'),
+              TextButton(
+                onPressed: () => _showConfigDialog(),
+                child: Text('创建新配置'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_currentConfig == null) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_queue, size: 48),
+              SizedBox(height: 16),
+              Text('请从侧边栏选择WebDAV配置'),
+              TextButton(
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                child: Text('打开配置列表'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_isLoading) {
+      return SliverFillRemaining(
+        child: const Center(child: CircularProgressIndicator.adaptive()),
+      );
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final file = _files[index];
+        return _buildFileItem(file, index);
+      }, childCount: _files.length),
+    );
+  }
+
+  // 列表项构建方法
   Widget _buildFileItem(webdav.File file, int index) {
     return AnimatedBuilder(
       animation: _animationController,
@@ -707,11 +704,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ? Icons.folder_outlined
               : lookupMimeType(file.name ?? '')?.startsWith('image/') ?? false
               ? Icons.image_outlined
-              : lookupMimeType(file.name?? '')?.startsWith('video/')?? false
+              : lookupMimeType(file.name ?? '')?.startsWith('video/') ?? false
               ? Icons.video_library_outlined
-              : lookupMimeType(file.name?? '')?.startsWith('audio/')?? false
+              : lookupMimeType(file.name ?? '')?.startsWith('audio/') ?? false
               ? Icons.audio_file_outlined
-              : lookupMimeType(file.name?? '')?.startsWith('text/')?? false
+              : lookupMimeType(file.name ?? '')?.startsWith('text/') ?? false
               ? Icons.text_snippet_outlined
               : Icons.insert_drive_file_outlined,
           color: Theme.of(context).colorScheme.primary,
@@ -728,29 +725,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ),
         trailing: PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onSurface),
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'Download',
-              child: Text('下载'),
-            ),
-            PopupMenuItem(
-              value: 'Rename',
-              child: Text('重命名'),
-            ),
-            PopupMenuItem(
-              value: 'Copy',
-              child: Text('复制'),
-            ),
-            PopupMenuItem(
-              value: 'Move',
-              child: Text('移动'),
-            ),
-            PopupMenuItem(
-              value: 'Delete',
-              child: Text('删除'),
-            ),
-          ],
+          icon: Icon(
+            Icons.more_vert,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          itemBuilder:
+              (context) => [
+                PopupMenuItem(value: 'Download', child: Text('下载')),
+                PopupMenuItem(value: 'Rename', child: Text('重命名')),
+                PopupMenuItem(value: 'Copy', child: Text('复制')),
+                PopupMenuItem(value: 'Move', child: Text('移动')),
+                PopupMenuItem(value: 'Delete', child: Text('删除')),
+              ],
           onSelected: (value) {
             switch (value) {
               case 'Download':
@@ -783,7 +769,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   _triggerBreadcrumbScroll();
                   _loadFiles();
                 }
-                : () {}
+                : () {},
       ),
     );
   }
@@ -904,15 +890,35 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             color: Theme.of(context).colorScheme.onPrimaryContainer,
           ),
           const SizedBox(height: 16),
-          Text(
-            _errorMessage ?? '未知错误',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.error,
-              fontSize: 12,
-            ),
-          ),
+          Text(_errorMessage ?? '未知错误', style: TextStyle(fontSize: 12)),
         ],
       ),
     );
+  }
+}
+
+class _BreadcrumbHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _BreadcrumbHeaderDelegate({required this.child});
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return child;
+  }
+
+  @override
+  double get maxExtent => 50; // 最大高度
+
+  @override
+  double get minExtent => 50; // 最小高度
+
+  @override
+  bool shouldRebuild(covariant _BreadcrumbHeaderDelegate oldDelegate) {
+    return child != oldDelegate.child;
   }
 }
