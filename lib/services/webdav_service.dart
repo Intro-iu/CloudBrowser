@@ -28,7 +28,6 @@ class WebDAVService {
       }
       return response;
     } catch (e) {
-      print('WebDAV readDir error: $e');
       rethrow;
     }
   }

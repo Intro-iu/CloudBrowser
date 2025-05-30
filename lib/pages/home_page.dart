@@ -3,6 +3,7 @@ import 'package:webdav_client/webdav_client.dart' as webdav;
 import '../services/webdav_service.dart';
 import '../models/webdav_config.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:mime/mime.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -36,7 +37,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   final String _mainConfigFile = 'config.json'; // 主配置文件
   WebDAVConfig? _currentConfig; // 当前配置
-  
+
   final String _configDir = 'conf.d'; // 配置目录
   List<WebDAVConfig> _configs = []; // 配置列表
 
@@ -456,7 +457,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             _goToParentDirectory();
             return;
           },
-          child: _buildBodyContent(), // 将主体内容提取到单独的方法
+          child: _buildBodyContent(),
         ),
       ),
       drawer: Drawer(
@@ -569,6 +570,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
+  // 构建工具栏
   List<Widget> _sliverBuilder(BuildContext context, bool innerBoxIsScrolled) {
     return <Widget>[
       SliverOverlapAbsorber(
@@ -576,8 +578,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         sliver: Container(
           key: _sliverAppBarKey, // 绑定 key
           child: SliverAppBar(
-            pinned: true,
             floating: true,
+            pinned: false,
+            snap: false,
             backgroundColor: Theme.of(context).colorScheme.surface,
             title: Text(
               'CloudBrowser',
@@ -684,7 +687,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  // 列表项构建方法
+    // 列表项构建方法
   Widget _buildFileItem(webdav.File file, int index) {
     return AnimatedBuilder(
       animation: _animationController,
@@ -700,7 +703,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       child: ListTile(
         hoverColor: Theme.of(context).colorScheme.primaryContainer,
         leading: Icon(
-          file.isDir ?? false ? Icons.folder : Icons.insert_drive_file,
+          file.isDir ?? false
+              ? Icons.folder_outlined
+              : lookupMimeType(file.name ?? '')?.startsWith('image/') ?? false
+              ? Icons.image_outlined
+              : lookupMimeType(file.name?? '')?.startsWith('video/')?? false
+              ? Icons.video_library_outlined
+              : lookupMimeType(file.name?? '')?.startsWith('audio/')?? false
+              ? Icons.audio_file_outlined
+              : lookupMimeType(file.name?? '')?.startsWith('text/')?? false
+              ? Icons.text_snippet_outlined
+              : Icons.insert_drive_file_outlined,
           color: Theme.of(context).colorScheme.primary,
           size: 28,
         ),
@@ -714,6 +727,50 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
+        trailing: PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onSurface),
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'Download',
+              child: Text('下载'),
+            ),
+            PopupMenuItem(
+              value: 'Rename',
+              child: Text('重命名'),
+            ),
+            PopupMenuItem(
+              value: 'Copy',
+              child: Text('复制'),
+            ),
+            PopupMenuItem(
+              value: 'Move',
+              child: Text('移动'),
+            ),
+            PopupMenuItem(
+              value: 'Delete',
+              child: Text('删除'),
+            ),
+          ],
+          onSelected: (value) {
+            switch (value) {
+              case 'Download':
+                // _downloadFile(file);
+                break;
+              case 'Rename':
+                // _renameFile(file);
+                break;
+              case 'Copy':
+                // _copyFiletoDir(file);
+                break;
+              case 'Move':
+                // _moveFiletoDir(file);
+                break;
+              case 'Delete':
+                // _deleteFile(file);
+                break;
+            }
+          },
+        ),
         onTap:
             file.isDir ?? false
                 ? () {
@@ -726,7 +783,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   _triggerBreadcrumbScroll();
                   _loadFiles();
                 }
-                : null,
+                : () {}
       ),
     );
   }
